@@ -40,13 +40,13 @@ export const generateMenuFromDump = async (
 ): Promise<{ items: MenuItem[]; usage: UsageStats }> => {
   onLog("[SYSTEM] Initializing Gemini client...");
   
-  if (!process.env.API_KEY) {
-    const msg = "[CRITICAL] API_KEY is missing from environment variables.";
+  if (!import.meta.env.VITE_GEMINI_API_KEY) {
+    const msg = "[CRITICAL] VITE_GEMINI_API_KEY is missing from environment variables.";
     onLog(msg);
     throw new Error(msg);
   }
 
-  const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
+  const ai = new GoogleGenAI({ apiKey: import.meta.env.VITE_GEMINI_API_KEY });
   onLog("[SYSTEM] Client initialized. Model: gemini-3-flash-preview");
 
   const systemPrompt = `
