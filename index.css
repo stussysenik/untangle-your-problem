@@ -1,3 +1,5 @@
+@import url('https://fonts.googleapis.com/css2?family=Rubik+Spray+Paint&display=swap');
+
 /* NASA / Swiss Style Typography */
 body {
         background-color: #ffffff;
@@ -149,4 +151,66 @@ body {
                 /* Often needed to kill flex/scroll behavior */
                 max-height: none !important;
         }
+}
+
+/* Riso / Spray Style */
+.font-rubik-spray {
+        font-family: 'Rubik Spray Paint', system-ui;
+}
+
+.riso-colors {
+        background-color: #fff0f5;
+        /* Lavender Blush */
+        color: #483d8b;
+        /* Dark Slate Blue */
+        border: 2px solid #483d8b;
+        box-shadow: 6px 6px 0 #7fffd4;
+        /* Aquamarine */
+}
+
+/* Responsive Optimizations */
+/* Ensure content fits nicely on Full HD (1920x1080) and smaller screens */
+
+/* Medium screens (tablets, 768px - 1023px) */
+@media (min-width: 768px) and (max-width: 1023px) {
+        body {
+                font-size: 14px;
+        }
+}
+
+/* Large screens (small laptops, 1024px - 1439px) */
+/* At 1920px width, each panel is ~832px with lg:p-12 (48px) */
+@media (min-width: 1024px) and (max-width: 1439px) {
+        .font-rubik-spray {
+                /* Slightly smaller on smaller desktop screens */
+                letter-spacing: 0.02em;
+        }
+}
+
+/* Extra large screens (Full HD and above, 1440px+) */
+@media (min-width: 1440px) {
+
+        /* Optimal spacing for larger screens */
+        body {
+                font-size: 16px;
+        }
+}
+
+/* Ensure text never overflows containers */
+h1,
+h2,
+h3,
+h4,
+h5,
+h6 {
+        overflow-wrap: break-word;
+        word-wrap: break-word;
+        hyphens: auto;
+}
+
+/* Prevent horizontal scroll */
+body,
+#root {
+        overflow-x: hidden;
+        max-width: 100vw;
 }

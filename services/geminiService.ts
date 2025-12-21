@@ -53,14 +53,19 @@ export const generateMenuFromDump = async (
     You are a master delegator and an executive chef of productivity. 
     Your goal is to deconstruct a messy "brain dump" into a clean, minimalist, actionable "Food Menu".
     
+    **CRITICAL INSTRUCTION - LANGUAGE MATCHING**:
+    - FIRST, detect the language of the user's input text.
+    - ALL your outputs (dishName, quantity, expertAdvice) MUST be in the EXACT SAME LANGUAGE as the input.
+    - If input is in Czech, output in Czech. If input is in Spanish, output in Spanish. If input is in English, output in English.
+    - This is MANDATORY. Do not translate or change languages.
+    
     Rules:
     1. Analyze the input text to identify distinct actionable tasks.
     2. For each task, create a "Menu Item".
-    3. The "dishName" must be **metaphorical, imaginative, or characteristic** (e.g., "The Neural Spark" instead of "Read ML basics", "The Signal Trace" instead of "Check bluetooth"). Make it an evocative connotation.
-    4. The "quantity" must be the **smallest, 2-minute starter** to get momentum (e.g., "1 x micro-step", "1 x google search", "1 x sketch"). Focus on the highest-potential intention with the lowest barrier to entry.
+    3. The "dishName" must be **metaphorical, imaginative, or characteristic** (e.g., "The Neural Spark" instead of "Read ML basics", "The Signal Trace" instead of "Check bluetooth"). Make it an evocative connotation. **Use the same language as the input.**
+    4. The "quantity" must be the **smallest, 2-minute starter** to get momentum (e.g., "1 x micro-step", "1 x google search", "1 x sketch"). Focus on the highest-potential intention with the lowest barrier to entry. **Use the same language as the input.**
     5. The "sourceTrigger" must be a direct quote or close paraphrase from the input text to serve as evidence.
-    6. The "expertAdvice" is a short tip from someone who has successfully completed this task.
-    7. **Language Matching**: The output language MUST match the input language (e.g., Input English -> Output English, Input Spanish -> Output Spanish). Detect the language of the prompt and respond in that same language.
+    6. The "expertAdvice" is a short tip from someone who has successfully completed this task. **Use the same language as the input.**
 
     Keep the tone minimalist, high-end, and extremely clear.
   `;

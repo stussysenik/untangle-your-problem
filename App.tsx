@@ -198,14 +198,14 @@ export default function App() {
       setUsageStats(usage);
       setSessionId(generateSessionId());
 
-      // Randomize Header Color
+      // Randomize Header Color - High-Contrast Riso Colors (Designer Grade)
       const colors = [
-        'text-[#ff00ff]', // Magenta
-        'text-[#00ffff]', // Cyan
-        'text-[#ffff00]', // Yellow
-        'text-[#ff3300]', // Safety Orange
-        'text-[#33ff00]', // Lime
-        'text-[#9d00ff]', // Purple
+        '#0066FF', // Electric Blue
+        '#FF006E', // Hot Pink
+        '#FF4500', // Riso Orange-Red
+        '#00D084', // Emerald Green
+        '#8338EC', // Riso Purple (user approved!)
+        '#E63946', // Vibrant Red
       ];
       setHeaderColor(colors[Math.floor(Math.random() * colors.length)]);
 
@@ -410,7 +410,7 @@ export default function App() {
           {renderDraggableNotes()}
 
           <header className="mb-8 lg:mb-12 relative z-0 pointer-events-none">
-            <h1 className="text-4xl lg:text-5xl font-mono font-bold tracking-tighter uppercase leading-[0.9] mb-8 lg:mb-12 pointer-events-auto">
+            <h1 className="text-3xl md:text-4xl lg:text-5xl font-mono font-bold tracking-tighter uppercase leading-[0.9] mb-8 lg:mb-10 pointer-events-auto">
               Untangle<br />Your<br />Problem...
             </h1>
             <div className="font-typewriter text-sm text-black space-y-6 max-w-md leading-relaxed pointer-events-auto">
@@ -496,7 +496,7 @@ export default function App() {
         {/* BIG TOTAL HEADER - BRUTALIST STICKER */}
         <div className="mb-12 lg:mb-16 pointer-events-none select-none relative inline-block group">
           <div className="relative z-10 bg-white border-4 border-black px-6 py-4 shadow-[8px_8px_0px_0px_rgba(0,0,0,1)] transform -rotate-1 transition-transform group-hover:rotate-0 group-hover:translate-x-1 group-hover:translate-y-1 group-hover:shadow-[4px_4px_0px_0px_rgba(0,0,0,1)]">
-            <h1 className={`font-spray font-normal text-5xl lg:text-7xl tracking-widest leading-none ${headerColor} drop-shadow-sm`}>
+            <h1 className="font-rubik-spray text-5xl md:text-6xl lg:text-7xl xl:text-8xl tracking-wide leading-none max-w-full" style={{ color: headerColor }}>
               = {totalCount} {totalCount === 1 ? 'thing' : 'things'}
             </h1>
           </div>
@@ -533,7 +533,7 @@ export default function App() {
                       <div className="flex flex-col items-start gap-1 border-b border-gray-100 pb-4 mb-2 lg:border-none lg:pb-0 lg:mb-0">
                         {/* DISH NAME - HELVETICA BOLD - HIGH CONTRAST */}
                         <div className="flex flex-row justify-between items-baseline w-full gap-4">
-                          <h3 className={`font-sans font-black text-xl lg:text-3xl uppercase leading-none tracking-tight transition-colors duration-200 ${isActive ? 'bg-insight text-black' : 'text-black'}`}>
+                          <h3 className={`font-sans font-black text-lg md:text-xl lg:text-2xl xl:text-3xl uppercase leading-none tracking-tight transition-colors duration-200 ${isActive ? 'bg-insight text-black' : 'text-black'}`}>
                             {item.dishName}
                           </h3>
 
@@ -559,9 +559,18 @@ export default function App() {
                 Conclusion (Total Output)
               </div>
               <div className="font-mono text-xs lg:text-sm text-gray-500 leading-relaxed break-words bg-gray-50 p-4 lg:p-6 rounded-sm">
-                {/* Simplified Conclusion */}
-                <span className="opacity-75 block mb-4 border-b border-black/10 pb-2">Verified Count:</span>
-                <div className="text-black text-xl lg:text-2xl font-bold tracking-tight">
+                {/* Detailed Breakdown */}
+                <div className="opacity-75 mb-4">
+                  = {menuItems.map((item, idx) => (
+                    <span key={item.id}>
+                      {item.quantity} x {item.dishName.toLowerCase()}
+                      {idx < menuItems.length - 1 ? ' + ' : ''}
+                    </span>
+                  ))}
+                </div>
+
+                {/* Final Count */}
+                <div className="text-black text-xl lg:text-2xl font-bold tracking-tight border-t border-black/10 pt-4">
                   = {totalCount} x things
                 </div>
               </div>
@@ -666,13 +675,13 @@ export default function App() {
 
       {/* LEFT PANEL */}
       {/* Mobile order: Top (Form mode: Info), Top (Result mode: Itinerary) */}
-      <div className="left-panel-container w-full lg:w-1/2 flex-shrink-0 h-auto lg:h-full p-6 lg:p-16 border-b lg:border-b-0 lg:border-r border-gray-200 bg-white/50 z-20 lg:overflow-hidden flex flex-col relative grid-line-r">
+      <div className="left-panel-container w-full lg:w-1/2 flex-shrink-0 h-auto lg:h-full p-6 md:p-8 lg:p-12 xl:p-16 border-b lg:border-b-0 lg:border-r border-gray-200 bg-white/50 z-20 lg:overflow-hidden flex flex-col relative grid-line-r">
         {renderLeftPanel()}
       </div>
 
       {/* RIGHT PANEL */}
       {/* Mobile order: Bottom. Needs min-height for typing comfortably on mobile */}
-      <div className="right-panel-container w-full lg:w-1/2 flex-shrink-0 min-h-[50vh] lg:h-full bg-gray-50/30 p-6 lg:p-16 relative z-10 lg:overflow-hidden flex flex-col">
+      <div className="right-panel-container w-full lg:w-1/2 flex-shrink-0 min-h-[50vh] lg:h-full bg-gray-50/30 p-6 md:p-8 lg:p-12 xl:p-16 relative z-10 lg:overflow-hidden flex flex-col">
         {renderRightPanel()}
       </div>
 
