@@ -198,16 +198,98 @@ export default function App() {
       setUsageStats(usage);
       setSessionId(generateSessionId());
 
-      // Randomize Header Color - High-Contrast Riso Colors (Designer Grade)
-      const colors = [
-        '#0066FF', // Electric Blue
-        '#FF006E', // Hot Pink
-        '#FF4500', // Riso Orange-Red
-        '#00D084', // Emerald Green
-        '#8338EC', // Riso Purple (user approved!)
-        '#E63946', // Vibrant Red
-      ];
-      setHeaderColor(colors[Math.floor(Math.random() * colors.length)]);
+      // Fibonacci-based RGB Color Generator with Contrast Guarantee
+      // Creates a rhythmic "footstep" cadence through color space
+
+      const generateFibonacciColor = (seed: number, previousColor?: string): string => {
+        // Generate Fibonacci sequence for RGB channels
+        const fib = (n: number): number => {
+          if (n <= 1) return n;
+          let a = 0, b = 1;
+          for (let i = 2; i <= n; i++) {
+            [a, b] = [b, a + b];
+          }
+          return b;
+        };
+
+        // Use seed to generate three different Fibonacci positions
+        const seedOffset = seed * 7; // Prime multiplier for distribution
+        const r = fib((seedOffset + 5) % 20) * 15 % 256; // Red channel
+        const g = fib((seedOffset + 11) % 20) * 13 % 256; // Green channel  
+        const b = fib((seedOffset + 17) % 20) * 11 % 256; // Blue channel
+
+        // Ensure vibrant colors by boosting intensity
+        const vibrance = 1.5;
+        const rVibrant = Math.min(255, Math.floor(r * vibrance));
+        const gVibrant = Math.min(255, Math.floor(g * vibrance));
+        const bVibrant = Math.min(255, Math.floor(b * vibrance));
+
+        return `rgb(${rVibrant}, ${gVibrant}, ${bVibrant})`;
+      };
+
+      // Calculate color contrast (perceptual difference)
+      const getContrast = (color1: string, color2: string): number => {
+        const parseRGB = (color: string): [number, number, number] => {
+          const match = color.match(/rgb\((\d+),\s*(\d+),\s*(\d+)\)/);
+          if (match) {
+            return [parseInt(match[1]), parseInt(match[2]), parseInt(match[3])];
+          }
+          return [0, 0, 0];
+        };
+
+        const [r1, g1, b1] = parseRGB(color1);
+        const [r2, g2, b2] = parseRGB(color2);
+
+        // Euclidean distance in RGB space
+        return Math.sqrt(
+          Math.pow(r2 - r1, 2) +
+          Math.pow(g2 - g1, 2) +
+          Math.pow(b2 - b1, 2)
+        );
+      };
+
+      // Get color history
+      const colorHistoryKey = 'untangle_color_history';
+      const seedKey = 'untangle_color_seed';
+      let lastColor: string | null = null;
+      let currentSeed = Math.floor(Math.random() * 100);
+
+      try {
+        const stored = localStorage.getItem(colorHistoryKey);
+        const storedSeed = localStorage.getItem(seedKey);
+        if (stored) {
+          const history = JSON.parse(stored);
+          lastColor = history[history.length - 1] || null;
+        }
+        if (storedSeed) {
+          currentSeed = parseInt(storedSeed) + 1; // Step forward
+        }
+      } catch (e) {
+        // Start fresh
+      }
+
+      // Generate color with contrast guarantee
+      const MIN_CONTRAST = 200; // Minimum perceptual difference
+      let selectedColor = generateFibonacciColor(currentSeed, lastColor || undefined);
+      let attempts = 0;
+
+      // Keep generating until we find a contrasting color
+      while (lastColor && getContrast(selectedColor, lastColor) < MIN_CONTRAST && attempts < 50) {
+        currentSeed += 3; // Step by 3 for varied sequence
+        selectedColor = generateFibonacciColor(currentSeed, lastColor);
+        attempts++;
+      }
+
+      setHeaderColor(selectedColor);
+
+      // Update history (keep last 2 for contrast checking)
+      try {
+        const history = [lastColor, selectedColor].filter(Boolean);
+        localStorage.setItem(colorHistoryKey, JSON.stringify(history.slice(-2)));
+        localStorage.setItem(seedKey, currentSeed.toString());
+      } catch (e) {
+        console.warn('Could not save color history');
+      }
 
       setAppState(AppState.MENU);
       setViewMode('RESULT');
