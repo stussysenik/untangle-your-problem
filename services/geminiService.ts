@@ -3,7 +3,7 @@ import { MenuItem, UsageStats } from "../types";
 
 // Pricing for Gemini 1.5 Flash (closest proxy for 3-flash-preview in estimation logic)
 // Pricing (Input / Output per 1M tokens)
-const INPUT_PRICE_PER_1M = 0.10; 
+const INPUT_PRICE_PER_1M = 0.10;
 const OUTPUT_PRICE_PER_1M = 0.40;
 
 const menuItemSchema: Schema = {
@@ -11,11 +11,11 @@ const menuItemSchema: Schema = {
   properties: {
     dishName: {
       type: Type.STRING,
-      description: "A motivating title for the task, strictly 3-5 words.",
+      description: "A metaphorical, imaginative, or characteristic title (connotation) for the task, strictly 3-5 words.",
     },
     quantity: {
       type: Type.STRING,
-      description: "A quantified action (e.g., '3 x drafts', '1 x call'). Format: 'NUMBER x ACTION'. Keep action to 1-2 words.",
+      description: "The smallest, 2-minute starter action (e.g., '1 x sketch', '1 x search'). Format: 'NUMBER x ACTION'.",
     },
     sourceTrigger: {
       type: Type.STRING,
@@ -39,7 +39,7 @@ export const generateMenuFromDump = async (
   onLog: (message: string) => void
 ): Promise<{ items: MenuItem[]; usage: UsageStats }> => {
   onLog("[SYSTEM] Initializing Gemini client...");
-  
+
   if (!import.meta.env.VITE_GEMINI_API_KEY) {
     const msg = "[CRITICAL] VITE_GEMINI_API_KEY is missing from environment variables.";
     onLog(msg);
@@ -56,8 +56,8 @@ export const generateMenuFromDump = async (
     Rules:
     1. Analyze the input text to identify distinct actionable tasks.
     2. For each task, create a "Menu Item".
-    3. The "dishName" must be 3-5 words, encouraging, and accurate.
-    4. The "quantity" must be specific (e.g., "2 x emails", "1 x set").
+    3. The "dishName" must be **metaphorical, imaginative, or characteristic** (e.g., "The Neural Spark" instead of "Read ML basics", "The Signal Trace" instead of "Check bluetooth"). Make it an evocative connotation.
+    4. The "quantity" must be the **smallest, 2-minute starter** to get momentum (e.g., "1 x micro-step", "1 x google search", "1 x sketch"). Focus on the highest-potential intention with the lowest barrier to entry.
     5. The "sourceTrigger" must be a direct quote or close paraphrase from the input text to serve as evidence.
     6. The "expertAdvice" is a short tip from someone who has successfully completed this task.
     
@@ -67,10 +67,10 @@ export const generateMenuFromDump = async (
   try {
     onLog("[NETWORK] Preparing payload...");
     onLog(`[DATA] Input length: ${text.length} chars`);
-    
+
     // Safety timeout promise
     const timeoutMs = 45000;
-    const timeoutPromise = new Promise((_, reject) => 
+    const timeoutPromise = new Promise((_, reject) =>
       setTimeout(() => reject(new Error(`Request timed out after ${timeoutMs}ms`)), timeoutMs)
     );
 
@@ -88,13 +88,13 @@ export const generateMenuFromDump = async (
 
     onLog("[NETWORK] Sending request to Google AI Gateway...");
     const startTime = Date.now();
-    
+
     // Race against timeout
     const response = await Promise.race([apiCallPromise, timeoutPromise]) as any;
     const duration = Date.now() - startTime;
-    
+
     onLog(`[NETWORK] Response received in ${duration}ms.`);
-    
+
     const usageMetadata = response.usageMetadata;
     const promptTokens = usageMetadata?.promptTokenCount || 0;
     const candidateTokens = usageMetadata?.candidatesTokenCount || 0;
@@ -107,13 +107,13 @@ export const generateMenuFromDump = async (
     onLog(`[METRICS] Usage: ${totalTokens} tokens. Cost: ~$${cost.toFixed(6)}`);
 
     if (!response.candidates || response.candidates.length === 0) {
-        onLog("[ERROR] No candidates returned from API. Possible safety block.");
-        throw new Error("No candidates returned. content was likely filtered.");
+      onLog("[ERROR] No candidates returned from API. Possible safety block.");
+      throw new Error("No candidates returned. content was likely filtered.");
     }
 
     const candidate = response.candidates[0];
     if (candidate.finishReason && candidate.finishReason !== "STOP") {
-        onLog(`[WARNING] Model finish reason: ${candidate.finishReason}`);
+      onLog(`[WARNING] Model finish reason: ${candidate.finishReason}`);
     }
 
     let items: MenuItem[] = [];
@@ -122,7 +122,7 @@ export const generateMenuFromDump = async (
       try {
         const parsed = JSON.parse(response.text);
         if (!Array.isArray(parsed)) {
-            throw new Error("Response is not an array");
+          throw new Error("Response is not an array");
         }
         items = parsed.map((item: any, index: number) => ({
           ...item,

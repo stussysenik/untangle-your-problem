@@ -10,7 +10,7 @@ const ArrowRightIcon = () => (
 );
 
 const DownloadIcon = () => (
-  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">
     <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
     <polyline points="7 10 12 15 17 10" />
     <line x1="12" y1="15" x2="12" y2="3" />
@@ -18,7 +18,7 @@ const DownloadIcon = () => (
 );
 
 const InfoIcon = () => (
-  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">
     <circle cx="12" cy="12" r="10"></circle>
     <line x1="12" y1="16" x2="12" y2="12"></line>
     <line x1="12" y1="8" x2="12.01" y2="8"></line>
@@ -35,12 +35,21 @@ type TextChunk = {
   itemId?: string;
 };
 
+type Note = {
+  id: string;
+  text: string;
+  x: number;
+  y: number;
+  rotation: number;
+  type: 'quote' | 'minimal' | 'scribble';
+};
+
 // --- Helpers ---
 const generateSessionId = () => {
-  // Generate a random batch ID
-  const dateStr = new Date().toISOString().slice(2, 10).replace(/-/g, '');
-  const randomHex = Math.floor(Math.random() * 16777215).toString(16).toUpperCase().substring(0, 4);
-  return `BATCH-${randomHex}`;
+  // Generate a cryptographic-style batch ID
+  // e.g., BATCH-0xAF31
+  const hex = Math.floor(Math.random() * 0xFFFFFF).toString(16).toUpperCase().padStart(6, '0').slice(0, 4);
+  return `BATCH-0x${hex}`;
 };
 
 export default function App() {
@@ -57,14 +66,99 @@ export default function App() {
   // Navigation State
   const [viewMode, setViewMode] = useState<'FORM' | 'RESULT'>('FORM');
 
+  // --- Sticky Notes State ---
+  const [notes, setNotes] = useState<Note[]>([
+    {
+      id: 'quote-1',
+      text: `"Everything feels stuck. I have 40 unread emails, the kitchen sink is leaking, I wanted to write a book this year but I haven't started... Also, I'm out of milk."`,
+      x: 480, // Top Right area
+      y: 60,
+      rotation: -1,
+      type: 'quote'
+    },
+    {
+      id: 'quote-2',
+      text: `"There is a specific kind of joy in seeing a messy mind mapped onto a clean sheet of paper. It’s like watching a storm turn into an irrigation system. Suddenly, the flood is useful."`,
+      x: 80, // Bottom Left area
+      y: 520,
+      rotation: 1,
+      type: 'quote'
+    },
+    {
+      id: 'quote-3',
+      text: `"I spent 3 hours worrying about the 10 minutes of work I had to do. Never again."`,
+      x: 520, // Middle Right area
+      y: 380,
+      rotation: -2,
+      type: 'quote'
+    },
+    {
+      id: 'stamp-1',
+      text: "UNTANGLED",
+      x: 650,
+      y: 580,
+      rotation: -8,
+      type: 'minimal' // Keeping one small distinct stamp as a signature
+    }
+  ]);
+  const [draggedNoteId, setDraggedNoteId] = useState<string | null>(null);
+  const [dragOffset, setDragOffset] = useState({ x: 0, y: 0 });
+
   // Focus management
   const textareaRef = useRef<HTMLTextAreaElement>(null);
+  const leftPanelRef = useRef<HTMLDivElement>(null);
+
   useEffect(() => {
     // Only focus on desktop or when explicitly intended to avoid jarring mobile jumps
     if (viewMode === 'FORM' && appState === AppState.INPUT && textareaRef.current && window.innerWidth > 768) {
       textareaRef.current.focus();
     }
   }, [viewMode, appState]);
+
+  // --- Drag Logic ---
+  const handleNoteMouseDown = (e: React.MouseEvent, noteId: string, noteX: number, noteY: number) => {
+    e.preventDefault();
+    e.stopPropagation(); // Prevent text selection
+    setDraggedNoteId(noteId);
+
+    // Calculate offset relative to the note's current position
+    // We want to know where within the note the user clicked
+    setDragOffset({
+      x: e.clientX - noteX,
+      y: e.clientY - noteY
+    });
+  };
+
+  useEffect(() => {
+    const handleMouseMove = (e: MouseEvent) => {
+      if (draggedNoteId) {
+        setNotes(prev => prev.map(n => {
+          if (n.id === draggedNoteId) {
+            return {
+              ...n,
+              x: e.clientX - dragOffset.x,
+              y: e.clientY - dragOffset.y
+            };
+          }
+          return n;
+        }));
+      }
+    };
+
+    const handleMouseUp = () => {
+      setDraggedNoteId(null);
+    };
+
+    if (draggedNoteId) {
+      window.addEventListener('mousemove', handleMouseMove);
+      window.addEventListener('mouseup', handleMouseUp);
+    }
+    return () => {
+      window.removeEventListener('mousemove', handleMouseMove);
+      window.removeEventListener('mouseup', handleMouseUp);
+    };
+  }, [draggedNoteId, dragOffset]);
+
 
   // Loading Animation
   useEffect(() => {
@@ -215,11 +309,49 @@ export default function App() {
 
   // --- Render Helpers ---
 
+  const renderDraggableNotes = () => {
+    return notes.map(note => (
+      <div
+        key={note.id}
+        onMouseDown={(e) => handleNoteMouseDown(e, note.id, note.x, note.y)}
+        style={{
+          top: note.y,
+          left: note.x,
+          transform: `rotate(${note.rotation}deg)`,
+          cursor: draggedNoteId === note.id ? 'grabbing' : 'grab',
+          zIndex: draggedNoteId === note.id ? 50 : 10,
+          position: 'absolute', // Ensure absolute
+        }}
+        className={`select-none transition-shadow duration-200 origin-center ${note.type === 'quote'
+          ? 'max-w-md p-6 bg-[#fffdf5] border border-blue-200 shadow-xl text-blue-800' // Sticky Note / Stamp feel
+          : 'p-2 border-2 border-blue-700 text-blue-700 font-bold uppercase tracking-widest text-xs mix-blend-multiply opacity-80 rounded-sm' // Minimal Stamp
+          } hover:shadow-2xl hover:scale-[1.01] active:scale-[1.02]`}
+      >
+        {note.type === 'quote' ? (
+          <>
+            <div className="absolute top-0 right-0 p-2 opacity-20 pointer-events-none text-blue-900">
+              <svg width="24" height="24" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 17h-2v-2h2v2zm2.07-7.75l-.9.92C13.45 12.9 13 13.5 13 15h-2v-.5c0-1.1.45-2.1 1.17-2.83l1.24-1.26c.37-.36.59-.86.59-1.41 0-1.1-.9-2-2-2s-2 .9-2 2H8c0-2.21 1.79-4 4-4s4 1.79 4 4c0 .88-.36 1.68-.93 2.25z" /></svg>
+            </div>
+            <p className="font-hand text-xl lg:text-3xl leading-relaxed font-bold opacity-90 pointer-events-none">
+              {note.text}
+            </p>
+            <div className="mt-2 flex justify-end pointer-events-none">
+              <span className="font-typewriter text-[9px] uppercase tracking-widest text-blue-400 opacity-60">Est. Previous User</span>
+            </div>
+          </>
+        ) : (
+          <span className="font-typewriter pointer-events-none">{note.text}</span>
+        )}
+      </div>
+    ));
+  };
+
+
   const renderTransparencyReport = () => {
     if (!usageStats) return null;
     return (
       <div className="mt-auto pt-8 border-t border-black font-mono text-[10px] uppercase tracking-widest text-gray-400 no-print flex justify-between items-center opacity-60">
-        <span>GEMINI-3-FLASH</span>
+        <span>STOCHASTIC PARROT 🦜</span>
         <span>{usageStats.totalTokenCount} TOKENS / ${usageStats.estimatedCost.toFixed(6)}</span>
       </div>
     );
@@ -230,16 +362,27 @@ export default function App() {
     if (appState === AppState.LOADING) {
       return (
         <div className="flex flex-col h-full justify-center max-w-lg mx-auto w-full">
-          <div className="mb-8 border-b border-black pb-2 flex justify-between items-baseline">
-            <span className="uppercase tracking-widest font-bold font-mono text-xs animate-pulse">Processing</span>
-            {/* Animated Dots */}
-            <span className="font-mono text-xs w-6 text-right">{loadingDots}</span>
+          {/* Technical Header */}
+          <div className="flex justify-between items-end border-b-2 border-black pb-2 mb-6">
+            <h2 className="text-xl font-sans font-bold tracking-tighter uppercase leading-none">System<br />Processing</h2>
+            <div className="flex flex-col items-end">
+              <span className="text-[9px] font-mono uppercase tracking-widest text-gray-500 mb-1">Status</span>
+              <span className="bg-insight text-black px-2 py-0.5 text-[10px] font-mono font-bold tracking-widest uppercase animate-pulse">Executable</span>
+            </div>
           </div>
-          <div className="w-full font-mono text-[10px] text-gray-500 flex flex-col gap-1.5">
+
+          {/* Progress Indicator - Thin Line */}
+          <div className="w-full h-[1px] bg-gray-200 mb-6 relative overflow-hidden">
+            <div className="absolute top-0 left-0 h-full w-1/3 bg-black animate-[spin_1.5s_linear_infinite]" style={{ animation: 'shimmer 1s infinite linear' }}></div>
+            <div className="h-full bg-black w-full origin-left animate-[scale-x_2s_ease-in-out_infinite]"></div>
+          </div>
+
+          <div className="w-full font-mono text-[10px] uppercase tracking-wider text-gray-600 flex flex-col gap-2 pl-4 border-l border-gray-100">
             {loadingLogs.map((log, i) => (
-              <div key={i} className="animate-in fade-in slide-in-from-left-2 duration-300">
-                {log}
-                {i === loadingLogs.length - 1 && <span className="typewriter-caret ml-1">&nbsp;</span>}
+              <div key={i} className="animate-in fade-in slide-in-from-left-2 duration-300 flex items-baseline gap-2">
+                <span className="text-gray-300 text-[8px]">0{i + 1}</span>
+                <span>{log.replace('> ', '')}</span>
+                {i === loadingLogs.length - 1 && <span className="typewriter-caret ml-1 bg-insight h-2 w-1.5 inline-block align-middle">&nbsp;</span>}
               </div>
             ))}
           </div>
@@ -250,29 +393,34 @@ export default function App() {
     // FORM
     if (viewMode === 'FORM') {
       return (
-        <div className="flex flex-col h-full relative">
-          <header className="mb-8 lg:mb-12">
-            <h1 className="text-4xl lg:text-5xl font-mono font-bold tracking-tighter uppercase leading-[0.9] mb-8 lg:mb-12">
+        <div className="flex flex-col h-full relative overflow-hidden" ref={leftPanelRef}>
+          {renderDraggableNotes()}
+
+          <header className="mb-8 lg:mb-12 relative z-0 pointer-events-none">
+            <h1 className="text-4xl lg:text-5xl font-mono font-bold tracking-tighter uppercase leading-[0.9] mb-8 lg:mb-12 pointer-events-auto">
               Untangle<br />Your<br />Problem...
             </h1>
-            <div className="font-mono text-xs text-gray-800 space-y-6 max-w-sm leading-loose">
-              <p className="leading-relaxed">
+            <div className="font-typewriter text-sm text-black space-y-6 max-w-md leading-relaxed pointer-events-auto">
+              <p>
                 <span className="bg-insight box-decoration-clone px-1 text-black">
-                  This tool deconstructs complex "brain dumps" into an actionable itinerary.
+                  This tool deconstructs complex "brain dumps" a.k.a the kind that leads to decision paralysis into an actionable itinerary.
                 </span>
               </p>
-              <ol className="list-decimal list-inside space-y-3 text-gray-500">
-                <li><span className="text-black">Type your stream of consciousness below.</span></li>
+
+              {/* Spacer removed for tighter layout */}
+
+              <ol className="list-decimal list-inside space-y-4 text-black">
+                <li><span>Type your stream of consciousness below.</span></li>
                 <li>Do not worry about structure, grammar, or content.</li>
                 <li>Write it out first.</li>
-                <li className="text-black leading-relaxed pt-2">
+                <li className="pt-2">
                   Press "GET MENU" to get your set of tasks to start with - we will help you untangle this! 🐙
                 </li>
               </ol>
             </div>
           </header>
 
-          <div className="mt-auto mb-8">
+          <div className="mt-auto mb-8 relative z-20">
             {menuItems.length > 0 && (
               <button
                 onClick={handleNavToResult}
@@ -286,12 +434,12 @@ export default function App() {
               onClick={handleDeconstruct}
               disabled={!isInputValid}
               className={`
-                            w-full flex items-center justify-between py-4 lg:py-6 border-b-2 transition-all font-mono font-bold text-xl lg:text-2xl uppercase group
-                            ${isInputValid ? 'border-black text-black' : 'border-gray-100 text-gray-200'}
+                            w-full py-8 border-4 border-black transition-all duration-75 ease-out font-mono font-bold text-4xl uppercase group relative overflow-hidden active:scale-[0.99] flex items-center justify-center gap-6
+                            ${isInputValid ? 'bg-white text-black hover:bg-black hover:text-white hover:border-black' : 'opacity-50 cursor-not-allowed bg-gray-50 text-gray-400 border-gray-200'}
                         `}
             >
               <span>Get Menu</span>
-              <span className={`transition-transform duration-300 ${isInputValid ? 'group-hover:translate-x-2' : ''}`}>
+              <span className={`transition-transform duration-300 transform scale-150 ${isInputValid ? 'group-hover:translate-x-4' : ''}`}>
                 <ArrowRightIcon />
               </span>
             </button>
@@ -324,10 +472,10 @@ export default function App() {
 
     return (
       <div className="flex flex-col h-full relative">
-        <header className="mb-6 lg:mb-8 flex justify-between items-baseline pt-2 pb-4 lg:pb-6 border-b border-gray-100 bg-white z-20">
+        <header className="mb-6 lg:mb-8 flex justify-between items-end pb-4 border-b-2 border-black bg-white z-20">
           <div className="flex flex-col gap-1">
-            <h2 className="text-xs font-mono font-bold tracking-widest uppercase text-black">Itinerary_</h2>
-            <span className="text-[10px] font-mono tracking-wider text-gray-400">ID: {sessionId}</span>
+            <h2 className="text-base font-typewriter font-bold tracking-tight text-gray-900 leading-none">Itinerary_</h2>
+            <span className="text-[10px] font-mono tracking-widest text-black/40 uppercase">Batch: {sessionId}</span>
           </div>
           <button
             onClick={handleNavToForm}
@@ -337,7 +485,7 @@ export default function App() {
           </button>
         </header>
 
-        <div className="flex-grow overflow-y-auto custom-scrollbar pr-1 lg:pr-4 pb-12">
+        <div className="flex-grow overflow-y-auto custom-scrollbar pr-1 lg:pr-4 pb-12 print-expand">
           <div className="flex flex-col gap-8 lg:gap-10">
             {menuItems.map((item, index) => {
               const isActive = activeItemId === item.id;
@@ -349,34 +497,38 @@ export default function App() {
                   onMouseLeave={() => setActiveItemId(null)}
                   onClick={() => {
                     setActiveItemId(item.id);
-                    document.getElementById(`source-chunk-${item.id}`)?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                    document.getElementById(`source-chunk-${item.id}`)?.scrollIntoView({ behavior: 'auto', block: 'center' }); // Auto = Snap
                   }}
-                  className="group transition-colors cursor-pointer"
+                  className="group transition-none cursor-pointer"
                 >
-                  <div className="flex flex-row gap-4 lg:gap-6 items-baseline relative">
-                    {/* MANIFESTO NUMBERING - MINIMALIST */}
-                    <div className="flex flex-col items-start flex-shrink-0 w-12 lg:w-16">
-                      <span className="font-mono text-2xl lg:text-4xl font-light tracking-tighter leading-none text-black opacity-80 lg:opacity-100">
+                  <div className="flex flex-row gap-4 lg:gap-8 items-baseline relative group/item">
+                    {/* MANIFESTO NUMBERING - RAW & PRECISE */}
+                    <div className="flex flex-col items-start flex-shrink-0 w-12 lg:w-16 pt-1">
+                      <span className="font-mono text-[10px] text-gray-400 opacity-0 group-hover/item:opacity-100 transition-opacity absolute -left-4 top-2">NO.</span>
+                      <span className="font-mono text-2xl lg:text-3xl font-bold tracking-tighter text-black leading-none">
                         {(index + 1).toString().padStart(2, '0')}
                       </span>
                     </div>
 
                     {/* Content */}
-                    <div className="flex-1 space-y-1.5 pt-0">
-                      <div className="flex flex-row justify-between items-baseline gap-2 border-b border-gray-100 pb-1 mb-1 lg:border-none lg:pb-0 lg:mb-0">
-                        {/* DISH NAME - The primary highlight target */}
-                        <h3 className={`font-mono font-bold text-sm lg:text-lg uppercase tracking-tight transition-colors duration-200 inline-block ${isActive ? 'bg-insight text-black' : 'text-black'}`}>
-                          {item.dishName}
-                        </h3>
+                    <div className="flex-1 space-y-3 pt-0">
+                      <div className="flex flex-col items-start gap-1 border-b border-gray-100 pb-4 mb-2 lg:border-none lg:pb-0 lg:mb-0">
+                        {/* DISH NAME - HELVETICA BOLD - HIGH CONTRAST */}
+                        <div className="flex flex-row justify-between items-baseline w-full gap-4">
+                          <h3 className={`font-sans font-black text-xl lg:text-3xl uppercase leading-none tracking-tight transition-colors duration-200 ${isActive ? 'bg-insight text-black' : 'text-black'}`}>
+                            {item.dishName}
+                          </h3>
 
-                        {/* POLISHED QUANTITY PILL */}
-                        <span className={`font-mono text-[9px] lg:text-[10px] whitespace-nowrap px-2 py-1 rounded-sm transition-colors ${isActive ? 'bg-black text-white' : 'bg-gray-100 text-gray-600'}`}>
-                          {item.quantity}
-                        </span>
+                          {/* ORGANIC QUANTITY - RIGHT ALIGNED */}
+                          <span className="font-serif italic text-lg lg:text-xl text-gray-500 lowercase leading-none whitespace-nowrap flex-shrink-0 text-right">
+                            &mdash; {item.quantity}
+                          </span>
+                        </div>
                       </div>
-                      {/* Advice - Scaled down for "Menu" feel */}
-                      <p className="font-serif text-sm lg:text-base leading-relaxed text-gray-700 max-w-2xl text-justify lg:text-left">
-                        &ldquo;{item.expertAdvice}&rdquo;
+                      {/* Advice - Typewriter */}
+                      <p className="font-typewriter text-xs lg:text-sm leading-relaxed text-gray-600 max-w-2xl text-justify lg:text-left mt-2 pl-1 border-l-2 border-transparent group-hover:border-insight transition-colors duration-0">
+                        <span className="font-bold text-black mr-2">ADVICE📚:</span>
+                        {item.expertAdvice}
                       </p>
                     </div>
                   </div>
@@ -429,7 +581,7 @@ export default function App() {
         </div>
 
         {/* Content Area */}
-        <div className="flex-grow overflow-y-auto custom-scrollbar relative pr-2">
+        <div className="flex-grow overflow-y-auto custom-scrollbar relative pr-2 print-expand">
           {viewMode === 'FORM' ? (
             <textarea
               ref={textareaRef}
@@ -439,11 +591,11 @@ export default function App() {
                 if (error) setError(null);
               }}
               placeholder="Begin typing stream of consciousness..."
-              className="w-full h-full bg-transparent text-base lg:text-lg font-mono leading-relaxed resize-none focus:outline-none placeholder-gray-300 p-0 border-none min-h-[50vh]"
+              className="w-full h-full bg-transparent text-base lg:text-lg font-typewriter leading-loose resize-none focus:outline-none placeholder-gray-300 p-0 border-none min-h-[50vh] print-expand"
               spellCheck={false}
             />
           ) : (
-            <div className="font-mono text-xs lg:text-sm leading-loose whitespace-pre-wrap text-justify pb-8 pt-4 lg:pt-0">
+            <div className="font-typewriter text-xs lg:text-sm leading-loose whitespace-pre-wrap text-justify pb-8 pt-4 lg:pt-0">
               {textChunks.map((chunk, idx) => {
                 const isActive = chunk.type === 'highlight' && chunk.itemId === activeItemId;
                 const isHighlighted = chunk.type === 'highlight';
@@ -456,17 +608,17 @@ export default function App() {
                   <span
                     key={idx}
                     id={chunk.itemId ? `source-chunk-${chunk.itemId}` : undefined}
-                    className={`transition-all duration-200 cursor-pointer ${isActive
-                      ? 'bg-insight text-black font-bold px-0.5 decoration-clone shadow-sm'
+                    className={`transition-none duration-0 cursor-pointer font-typewriter leading-loose ${isActive
+                      ? 'bg-insight text-black font-bold px-0.5 decoration-clone shadow-none'
                       : isHighlighted
-                        ? 'text-black font-semibold border-b border-gray-200 decoration-clone hover:bg-gray-100'
+                        ? 'text-black font-semibold border-b-2 border-black decoration-clone hover:bg-gray-100'
                         : 'text-gray-400'
                       }`}
                     onMouseEnter={() => isHighlighted && chunk.itemId && setActiveItemId(chunk.itemId)}
                     onClick={() => {
                       if (chunk.itemId) {
                         setActiveItemId(chunk.itemId);
-                        document.getElementById(`menu-item-${chunk.itemId}`)?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                        document.getElementById(`menu-item-${chunk.itemId}`)?.scrollIntoView({ behavior: 'auto', block: 'center' });
                       }
                     }}
                   >
@@ -491,17 +643,17 @@ export default function App() {
 
   return (
     // Mobile: Flex Col (stacked), auto height. Desktop: Flex Row, screen height.
-    <div className="min-h-screen w-full bg-white text-black selection:bg-insight selection:text-black flex flex-col lg:flex-row lg:h-screen lg:overflow-hidden">
+    <div className="min-h-screen w-full bg-white text-black selection:bg-insight selection:text-black flex flex-col lg:flex-row lg:h-screen lg:overflow-hidden font-sans">
 
       {/* LEFT PANEL */}
       {/* Mobile order: Top (Form mode: Info), Top (Result mode: Itinerary) */}
-      <div className="left-panel-container w-full lg:w-1/2 flex-shrink-0 h-auto lg:h-full p-4 lg:p-16 border-b lg:border-b-0 lg:border-r border-gray-100 bg-white z-20 lg:overflow-hidden flex flex-col">
+      <div className="left-panel-container w-full lg:w-1/2 flex-shrink-0 h-auto lg:h-full p-6 lg:p-16 border-b lg:border-b-0 lg:border-r border-gray-200 bg-white/50 z-20 lg:overflow-hidden flex flex-col relative grid-line-r">
         {renderLeftPanel()}
       </div>
 
       {/* RIGHT PANEL */}
       {/* Mobile order: Bottom. Needs min-height for typing comfortably on mobile */}
-      <div className="right-panel-container w-full lg:w-1/2 flex-shrink-0 min-h-[50vh] lg:h-full bg-gray-50 p-4 lg:p-16 relative z-10 lg:overflow-hidden flex flex-col">
+      <div className="right-panel-container w-full lg:w-1/2 flex-shrink-0 min-h-[50vh] lg:h-full bg-gray-50/30 p-6 lg:p-16 relative z-10 lg:overflow-hidden flex flex-col">
         {renderRightPanel()}
       </div>
 

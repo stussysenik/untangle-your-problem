@@ -1,86 +1,39 @@
 <!DOCTYPE html>
 <html lang="en">
-  <head>
-    <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>DESCRIBE YOUR PROBLEM</title>
-    <script src="https://cdn.tailwindcss.com"></script>
-    <script>
-      tailwind.config = {
-        theme: {
-          extend: {
-            fontFamily: {
-              mono: ['"Courier New"', 'Courier', 'monospace'],
-              sans: ['"Helvetica Neue"', 'Helvetica', 'Arial', 'sans-serif'],
-              serif: ['"Times New Roman"', 'Times', 'serif'],
-            },
-            colors: {
-              paper: '#ffffff',
-              ink: '#000000',
-              insight: '#CCFF00', // Vivid Neon Lime
-            }
+
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>DESCRIBE YOUR PROBLEM</title>
+  <link
+    href="https://fonts.googleapis.com/css2?family=Open+Sans:ital,wght@0,300..800;1,300..800&family=Shadows+Into+Light&family=Space+Mono:ital,wght@0,400;0,700;1,400;1,700&family=Special+Elite&display=swap"
+    rel="stylesheet">
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          fontFamily: {
+            mono: ['"Space Mono"', '"Courier New"', 'monospace'], // Space Mono for technical
+            sans: ['"Helvetica Neue"', 'Helvetica', 'Arial', 'sans-serif'], // Keep Swiss base for headers
+            body: ['"Open Sans"', 'sans-serif'], // Open Sans for reading
+            hand: ['"Shadows Into Light"', 'cursive'], // Handwritten notes
+            typewriter: ['"Special Elite"', 'monospace'], // Evidence/Advice
           },
+          colors: {
+            paper: '#ffffff',
+            ink: '#000000',
+            insight: '#CCFF00', // Vivid Neon Lime
+          },
+          transitionDuration: {
+            '0': '0ms',
+            '50': '50ms', // Mechanical snap
+          }
         },
-      }
-    </script>
-    <style>
-      body {
-        background-color: #ffffff;
-        color: #000000;
-        font-family: 'Helvetica Neue', sans-serif;
-        -webkit-font-smoothing: antialiased;
-      }
-      
-      /* Precision Selection */
-      ::selection {
-        background: #CCFF00;
-        color: #000000;
-      }
-      
-      .bg-insight {
-        background-color: #CCFF00;
-        color: #000000;
-      }
+      },
+    }
+  </script>
 
-      /* Ultra-Minimal Scrollbar */
-      .custom-scrollbar {
-        scrollbar-width: thin;
-        scrollbar-color: #e5e5e5 transparent;
-      }
-      .custom-scrollbar::-webkit-scrollbar {
-        width: 4px;
-      }
-      .custom-scrollbar::-webkit-scrollbar-track {
-        background: transparent;
-      }
-      .custom-scrollbar::-webkit-scrollbar-thumb {
-        background-color: #e5e5e5;
-        border-radius: 0px;
-      }
-      .custom-scrollbar::-webkit-scrollbar-thumb:hover {
-        background-color: #000000;
-      }
-
-      /* Caret */
-      .typewriter-caret {
-        border-right: 2px solid black;
-        animation: blink-caret 1s step-end infinite;
-      }
-      @keyframes blink-caret {
-        from, to { border-color: transparent }
-        50% { border-color: black; }
-      }
-
-      /* Print */
-      @media print {
-        @page { margin: 1cm; size: auto; }
-        body { -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; }
-        .no-print { display: none !important; }
-        .print-only { display: block !important; }
-        #root, .left-panel-container { height: auto !important; width: 100% !important; border: none !important; overflow: visible !important; }
-        .right-panel-container { display: none !important; }
-      }
-    </style>
   <script type="importmap">
 {
   "imports": {
@@ -91,10 +44,12 @@
   }
 }
 </script>
-<link rel="stylesheet" href="/index.css">
+  <link rel="stylesheet" href="/index.css">
 </head>
-  <body>
-    <div id="root"></div>
+
+<body>
+  <div id="root"></div>
   <script type="module" src="/index.tsx"></script>
 </body>
+
 </html>
