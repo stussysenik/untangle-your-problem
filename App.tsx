@@ -314,7 +314,13 @@ export default function App() {
     }
 
     // RESULT (ITINERARY)
-    const totalSummary = menuItems.map(i => i.quantity).join(' + ');
+    const totalCount = menuItems.reduce((acc, item) => {
+      // Try to parse "N x ..."
+      const match = item.quantity.match(/^(\d+)/);
+      return acc + (match ? parseInt(match[0], 10) : 0);
+    }, 0);
+
+    const equationParts = menuItems.map(i => i.quantity).join(' + ');
 
     return (
       <div className="flex flex-col h-full relative">
@@ -382,8 +388,11 @@ export default function App() {
               <div className="font-mono text-[10px] text-gray-400 mb-4 uppercase tracking-widest">
                 Conclusion (Total Output)
               </div>
-              <div className="font-mono text-xs lg:text-base text-black leading-relaxed break-words bg-gray-50 p-4 lg:p-6 rounded-sm">
-                = {totalSummary}
+              <div className="font-mono text-xs lg:text-sm text-gray-500 leading-relaxed break-words bg-gray-50 p-4 lg:p-6 rounded-sm">
+                <span className="opacity-75">= {equationParts}</span>
+                <div className="mt-4 pt-4 border-t border-gray-200 text-black text-xl lg:text-2xl font-bold tracking-tight">
+                  = {totalCount} x things
+                </div>
               </div>
             </div>
           </div>
