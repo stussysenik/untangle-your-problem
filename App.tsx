@@ -62,6 +62,7 @@ export default function App() {
   const [loadingLogs, setLoadingLogs] = useState<string[]>([]);
   const [loadingDots, setLoadingDots] = useState('');
   const [sessionId, setSessionId] = useState<string>('');
+  const [headerColor, setHeaderColor] = useState<string>('text-black');
 
   // Navigation State
   const [viewMode, setViewMode] = useState<'FORM' | 'RESULT'>('FORM');
@@ -196,6 +197,18 @@ export default function App() {
       setMenuItems(items);
       setUsageStats(usage);
       setSessionId(generateSessionId());
+
+      // Randomize Header Color
+      const colors = [
+        'text-[#ff00ff]', // Magenta
+        'text-[#00ffff]', // Cyan
+        'text-[#ffff00]', // Yellow
+        'text-[#ff3300]', // Safety Orange
+        'text-[#33ff00]', // Lime
+        'text-[#9d00ff]', // Purple
+      ];
+      setHeaderColor(colors[Math.floor(Math.random() * colors.length)]);
+
       setAppState(AppState.MENU);
       setViewMode('RESULT');
     } catch (e: any) {
@@ -462,13 +475,8 @@ export default function App() {
     }
 
     // RESULT (ITINERARY)
-    const totalCount = menuItems.reduce((acc, item) => {
-      // Try to parse "N x ..."
-      const match = item.quantity.match(/^(\d+)/);
-      return acc + (match ? parseInt(match[0], 10) : 0);
-    }, 0);
-
-    const equationParts = menuItems.map(i => i.quantity).join(' + ');
+    // Counting logic fix: Count items, not quantity sums (which confuses duration with count)
+    const totalCount = menuItems.length;
 
     return (
       <div className="flex flex-col h-full relative">
@@ -484,6 +492,16 @@ export default function App() {
             [ Back ]
           </button>
         </header>
+
+        {/* BIG TOTAL HEADER - BRUTALIST STICKER */}
+        <div className="mb-12 lg:mb-16 pointer-events-none select-none relative inline-block group">
+          <div className="relative z-10 bg-white border-4 border-black px-6 py-4 shadow-[8px_8px_0px_0px_rgba(0,0,0,1)] transform -rotate-1 transition-transform group-hover:rotate-0 group-hover:translate-x-1 group-hover:translate-y-1 group-hover:shadow-[4px_4px_0px_0px_rgba(0,0,0,1)]">
+            <h1 className={`font-spray font-normal text-5xl lg:text-7xl tracking-widest leading-none ${headerColor} drop-shadow-sm`}>
+              = {totalCount} {totalCount === 1 ? 'thing' : 'things'}
+            </h1>
+          </div>
+          {/* Decorative 'tape' or anchor visual if needed, but brutalist prefers raw block */}
+        </div>
 
         <div className="flex-grow overflow-y-auto custom-scrollbar pr-1 lg:pr-4 pb-12 print-expand">
           <div className="flex flex-col gap-8 lg:gap-10">
@@ -541,8 +559,9 @@ export default function App() {
                 Conclusion (Total Output)
               </div>
               <div className="font-mono text-xs lg:text-sm text-gray-500 leading-relaxed break-words bg-gray-50 p-4 lg:p-6 rounded-sm">
-                <span className="opacity-75">= {equationParts}</span>
-                <div className="mt-4 pt-4 border-t border-gray-200 text-black text-xl lg:text-2xl font-bold tracking-tight">
+                {/* Simplified Conclusion */}
+                <span className="opacity-75 block mb-4 border-b border-black/10 pb-2">Verified Count:</span>
+                <div className="text-black text-xl lg:text-2xl font-bold tracking-tight">
                   = {totalCount} x things
                 </div>
               </div>

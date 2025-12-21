@@ -60,7 +60,8 @@ export const generateMenuFromDump = async (
     4. The "quantity" must be the **smallest, 2-minute starter** to get momentum (e.g., "1 x micro-step", "1 x google search", "1 x sketch"). Focus on the highest-potential intention with the lowest barrier to entry.
     5. The "sourceTrigger" must be a direct quote or close paraphrase from the input text to serve as evidence.
     6. The "expertAdvice" is a short tip from someone who has successfully completed this task.
-    
+    7. **Language Matching**: The output language MUST match the input language (e.g., Input English -> Output English, Input Spanish -> Output Spanish). Detect the language of the prompt and respond in that same language.
+
     Keep the tone minimalist, high-end, and extremely clear.
   `;
 
