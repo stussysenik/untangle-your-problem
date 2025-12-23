@@ -38,10 +38,11 @@ type TextChunk = {
 type Note = {
   id: string;
   text: string;
-  x: number;
-  y: number;
+  dx: number; // Transform translate X (from grid position)
+  dy: number; // Transform translate Y (from grid position)
   rotation: number;
   type: 'quote' | 'minimal' | 'scribble';
+  gridArea: string; // CSS grid-area value
 };
 
 // --- Helpers ---
@@ -67,43 +68,38 @@ export default function App() {
   // Navigation State
   const [viewMode, setViewMode] = useState<'FORM' | 'RESULT'>('FORM');
 
-  // --- Sticky Notes State ---
+  // --- Sticky Notes State (Grid-Based) ---
+  // Notes are now positioned via CSS Grid cells and dragged via transform.
+  // Simplified: Only 2 notes for cleaner layout
   const [notes, setNotes] = useState<Note[]>([
     {
       id: 'quote-1',
       text: `"Everything feels stuck. I have 40 unread emails, the kitchen sink is leaking, I wanted to write a book this year but I haven't started... Also, I'm out of milk."`,
-      x: 480, // Top Right area
-      y: 60,
+      dx: 0,
+      dy: 0,
       rotation: -1,
-      type: 'quote'
+      type: 'quote',
+      gridArea: 'note1' // Right side
     },
     {
       id: 'quote-2',
-      text: `"There is a specific kind of joy in seeing a messy mind mapped onto a clean sheet of paper. It’s like watching a storm turn into an irrigation system. Suddenly, the flood is useful."`,
-      x: 80, // Bottom Left area
-      y: 520,
-      rotation: 1,
-      type: 'quote'
-    },
-    {
-      id: 'quote-3',
       text: `"I spent 3 hours worrying about the 10 minutes of work I had to do. Never again."`,
-      x: 520, // Middle Right area
-      y: 380,
-      rotation: -2,
-      type: 'quote'
-    },
-    {
-      id: 'stamp-1',
-      text: "UNTANGLED",
-      x: 650,
-      y: 580,
-      rotation: -8,
-      type: 'minimal' // Keeping one small distinct stamp as a signature
+      dx: 0,
+      dy: 0,
+      rotation: 2,
+      type: 'quote',
+      gridArea: 'note2' // Right side, below note1
     }
   ]);
-  const [draggedNoteId, setDraggedNoteId] = useState<string | null>(null);
-  const [dragOffset, setDragOffset] = useState({ x: 0, y: 0 });
+
+  // Drag state: tracks active drag operation
+  const [dragState, setDragState] = useState<{
+    noteId: string;
+    startX: number;
+    startY: number;
+    originalDx: number;
+    originalDy: number;
+  } | null>(null);
 
   // Focus management
   const textareaRef = useRef<HTMLTextAreaElement>(null);
@@ -116,29 +112,31 @@ export default function App() {
     }
   }, [viewMode, appState]);
 
-  // --- Drag Logic ---
-  const handleNoteMouseDown = (e: React.MouseEvent, noteId: string, noteX: number, noteY: number) => {
+  // --- Drag Logic (Transform-based) ---
+  const handleNoteMouseDown = (e: React.MouseEvent, noteId: string, currentDx: number, currentDy: number) => {
     e.preventDefault();
-    e.stopPropagation(); // Prevent text selection
-    setDraggedNoteId(noteId);
-
-    // Calculate offset relative to the note's current position
-    // We want to know where within the note the user clicked
-    setDragOffset({
-      x: e.clientX - noteX,
-      y: e.clientY - noteY
+    e.stopPropagation();
+    setDragState({
+      noteId,
+      startX: e.clientX,
+      startY: e.clientY,
+      originalDx: currentDx,
+      originalDy: currentDy
     });
   };
 
   useEffect(() => {
     const handleMouseMove = (e: MouseEvent) => {
-      if (draggedNoteId) {
+      if (dragState) {
+        const deltaX = e.clientX - dragState.startX;
+        const deltaY = e.clientY - dragState.startY;
+
         setNotes(prev => prev.map(n => {
-          if (n.id === draggedNoteId) {
+          if (n.id === dragState.noteId) {
             return {
               ...n,
-              x: e.clientX - dragOffset.x,
-              y: e.clientY - dragOffset.y
+              dx: dragState.originalDx + deltaX,
+              dy: dragState.originalDy + deltaY
             };
           }
           return n;
@@ -147,10 +145,10 @@ export default function App() {
     };
 
     const handleMouseUp = () => {
-      setDraggedNoteId(null);
+      setDragState(null);
     };
 
-    if (draggedNoteId) {
+    if (dragState) {
       window.addEventListener('mousemove', handleMouseMove);
       window.addEventListener('mouseup', handleMouseUp);
     }
@@ -158,7 +156,7 @@ export default function App() {
       window.removeEventListener('mousemove', handleMouseMove);
       window.removeEventListener('mouseup', handleMouseUp);
     };
-  }, [draggedNoteId, dragOffset]);
+  }, [dragState]);
 
 
   // Loading Animation
@@ -404,42 +402,39 @@ export default function App() {
 
   // --- Render Helpers ---
 
-  const renderDraggableNotes = () => {
-    return notes.map(note => (
-      <div
-        key={note.id}
-        onMouseDown={(e) => handleNoteMouseDown(e, note.id, note.x, note.y)}
-        style={{
-          top: note.y,
-          left: note.x,
-          transform: `rotate(${note.rotation}deg)`,
-          cursor: draggedNoteId === note.id ? 'grabbing' : 'grab',
-          zIndex: draggedNoteId === note.id ? 50 : 10,
-          position: 'absolute', // Ensure absolute
-        }}
-        className={`select-none transition-shadow duration-200 origin-center ${note.type === 'quote'
-          ? 'max-w-md p-6 bg-[#fffdf5] border border-blue-200 shadow-xl text-blue-800' // Sticky Note / Stamp feel
-          : 'p-2 border-2 border-blue-700 text-blue-700 font-bold uppercase tracking-widest text-xs mix-blend-multiply opacity-80 rounded-sm' // Minimal Stamp
-          } hover:shadow-2xl hover:scale-[1.01] active:scale-[1.02]`}
-      >
-        {note.type === 'quote' ? (
-          <>
-            <div className="absolute top-0 right-0 p-2 opacity-20 pointer-events-none text-blue-900">
-              <svg width="24" height="24" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 17h-2v-2h2v2zm2.07-7.75l-.9.92C13.45 12.9 13 13.5 13 15h-2v-.5c0-1.1.45-2.1 1.17-2.83l1.24-1.26c.37-.36.59-.86.59-1.41 0-1.1-.9-2-2-2s-2 .9-2 2H8c0-2.21 1.79-4 4-4s4 1.79 4 4c0 .88-.36 1.68-.93 2.25z" /></svg>
-            </div>
-            <p className="font-hand text-xl lg:text-3xl leading-relaxed font-bold opacity-90 pointer-events-none">
-              {note.text}
-            </p>
-            <div className="mt-2 flex justify-end pointer-events-none">
-              <span className="font-typewriter text-[9px] uppercase tracking-widest text-blue-400 opacity-60">Est. Previous User</span>
-            </div>
-          </>
-        ) : (
-          <span className="font-typewriter pointer-events-none">{note.text}</span>
-        )}
-      </div>
-    ));
-  };
+  // Render a single note (used within the grid)
+  const renderNote = (note: Note) => (
+    <div
+      key={note.id}
+      onMouseDown={(e) => handleNoteMouseDown(e, note.id, note.dx, note.dy)}
+      style={{
+        gridArea: note.gridArea,
+        transform: `translate3d(${note.dx}px, ${note.dy}px, 0) rotate(${note.rotation}deg)`,
+        cursor: dragState?.noteId === note.id ? 'grabbing' : 'grab',
+        zIndex: dragState?.noteId === note.id ? 50 : 10,
+      }}
+      className={`select-none transition-shadow duration-200 origin-center self-start justify-self-start ${note.type === 'quote'
+        ? 'max-w-sm lg:max-w-md p-4 lg:p-6 bg-[#fffdf5] border border-blue-200 shadow-xl text-blue-800'
+        : 'p-2 border-2 border-blue-700 text-blue-700 font-bold uppercase tracking-widest text-xs mix-blend-multiply opacity-80 rounded-sm'
+        } hover:shadow-2xl hover:scale-[1.01] active:scale-[1.02]`}
+    >
+      {note.type === 'quote' ? (
+        <>
+          <div className="absolute top-0 right-0 p-2 opacity-20 pointer-events-none text-blue-900">
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 17h-2v-2h2v2zm2.07-7.75l-.9.92C13.45 12.9 13 13.5 13 15h-2v-.5c0-1.1.45-2.1 1.17-2.83l1.24-1.26c.37-.36.59-.86.59-1.41 0-1.1-.9-2-2-2s-2 .9-2 2H8c0-2.21 1.79-4 4-4s4 1.79 4 4c0 .88-.36 1.68-.93 2.25z" /></svg>
+          </div>
+          <p className="font-hand text-lg lg:text-2xl xl:text-3xl leading-relaxed font-bold opacity-90 pointer-events-none">
+            {note.text}
+          </p>
+          <div className="mt-2 flex justify-end pointer-events-none">
+            <span className="font-typewriter text-[9px] uppercase tracking-widest text-blue-400 opacity-60">Est. Previous User</span>
+          </div>
+        </>
+      ) : (
+        <span className="font-typewriter pointer-events-none">{note.text}</span>
+      )}
+    </div>
+  );
 
 
   const renderTransparencyReport = () => {
@@ -485,41 +480,60 @@ export default function App() {
       )
     }
 
-    // FORM
+    // FORM - CSS Grid Layout (Simplified: 2 notes only)
+    // Grid Template Areas:
+    // "header  note1"
+    // "header  note2"
+    // "action  action"
     if (viewMode === 'FORM') {
       return (
-        <div className="flex flex-col h-full relative overflow-hidden" ref={leftPanelRef}>
-          {renderDraggableNotes()}
-
-          <header className="mb-8 lg:mb-12 relative z-0 pointer-events-none">
-            <h1 className="text-3xl md:text-4xl lg:text-5xl font-mono font-bold tracking-tighter uppercase leading-[0.9] mb-8 lg:mb-10 pointer-events-auto">
+        <div
+          ref={leftPanelRef}
+          className="h-full w-full max-w-5xl mx-auto relative"
+          style={{
+            display: 'grid',
+            gridTemplateColumns: '1fr minmax(200px, 280px)',
+            gridTemplateRows: 'auto auto auto',
+            gridTemplateAreas: `
+              "header note1"
+              "header note2"
+              "action action"
+            `,
+            gap: '1rem',
+            alignContent: 'start',
+          }}
+        >
+          {/* Header & Instructions - Overlaps with notes visually */}
+          <header style={{ gridArea: 'header' }} className="z-0 self-start">
+            <h1 className="text-3xl md:text-4xl lg:text-5xl font-mono font-bold tracking-tighter uppercase leading-[0.9] mb-6 lg:mb-8">
               Untangle<br />Your<br />Problem...
             </h1>
-            <div className="font-typewriter text-sm text-black space-y-6 max-w-md leading-relaxed pointer-events-auto">
+            <div className="font-typewriter text-sm text-black space-y-4 max-w-md leading-relaxed">
               <p>
                 <span className="bg-insight box-decoration-clone px-1 text-black">
                   This tool deconstructs complex "brain dumps" a.k.a the kind that leads to decision paralysis into an actionable itinerary.
                 </span>
               </p>
-
-              {/* Spacer removed for tighter layout */}
-
-              <ol className="list-decimal list-inside space-y-4 text-black">
+              <ol className="list-decimal list-inside space-y-3 text-black">
                 <li><span>Type your stream of consciousness below.</span></li>
                 <li>Do not worry about structure, grammar, or content.</li>
                 <li>Write it out first.</li>
-                <li className="pt-2">
+                <li className="pt-1">
                   Press "GET MENU" to get your set of tasks to start with - we will help you untangle this! 🐙
                 </li>
               </ol>
             </div>
           </header>
 
-          <div className="mt-auto mb-8 relative z-20">
+          {/* Render Notes in their grid areas */}
+          {notes.map(note => renderNote(note))}
+
+          {/* Action Button - Full width, brought up */}
+          <div style={{ gridArea: 'action' }} className="z-20 pt-8">
             {menuItems.length > 0 && (
               <button
                 onClick={handleNavToResult}
-                className="mb-6 text-xs font-mono underline hover:text-gray-500 transition-colors block"
+                className="mb-4 text-xs font-mono underline hover:text-gray-500 transition-colors block"
               >
                 View Previous Menu &rarr;
               </button>
@@ -529,22 +543,22 @@ export default function App() {
               onClick={handleDeconstruct}
               disabled={!isInputValid}
               className={`
-                            w-full py-8 border-4 border-black transition-all duration-75 ease-out font-mono font-bold text-4xl uppercase group relative overflow-hidden active:scale-[0.99] flex items-center justify-center gap-6
-                            ${isInputValid ? 'bg-white text-black hover:bg-black hover:text-white hover:border-black' : 'opacity-50 cursor-not-allowed bg-gray-50 text-gray-400 border-gray-200'}
-                        `}
+                w-full py-6 lg:py-8 border-4 border-black transition-all duration-75 ease-out font-mono font-bold text-2xl lg:text-4xl uppercase group relative overflow-hidden active:scale-[0.99] flex items-center justify-center gap-4 lg:gap-6
+                ${isInputValid ? 'bg-white text-black hover:bg-black hover:text-white hover:border-black' : 'opacity-50 cursor-not-allowed bg-gray-50 text-gray-400 border-gray-200'}
+              `}
             >
               <span>Get Menu</span>
-              <span className={`transition-transform duration-300 transform scale-150 ${isInputValid ? 'group-hover:translate-x-4' : ''}`}>
+              <span className={`transition-transform duration-300 transform scale-125 lg:scale-150 ${isInputValid ? 'group-hover:translate-x-4' : ''}`}>
                 <ArrowRightIcon />
               </span>
             </button>
 
             {error && (
-              <div className="mt-6 pt-4 border-t border-red-100 w-full animate-in fade-in slide-in-from-bottom-2">
-                <div className="text-red-600 font-mono text-[10px] flex items-center gap-2 font-bold uppercase mb-3">
+              <div className="mt-4 pt-3 border-t border-red-100 w-full animate-in fade-in slide-in-from-bottom-2">
+                <div className="text-red-600 font-mono text-[10px] flex items-center gap-2 font-bold uppercase mb-2">
                   <InfoIcon /> Processing Halted: {error}
                 </div>
-                <div className="font-mono text-[9px] text-gray-500 space-y-1 max-h-40 overflow-y-auto custom-scrollbar bg-gray-50 p-3 rounded border border-gray-100 shadow-inner">
+                <div className="font-mono text-[9px] text-gray-500 space-y-1 max-h-32 overflow-y-auto custom-scrollbar bg-gray-50 p-2 rounded border border-gray-100 shadow-inner">
                   {loadingLogs.map((log, i) => (
                     <div key={i} className="break-words border-b border-gray-100 pb-1 mb-1 last:border-0">{log}</div>
                   ))}
