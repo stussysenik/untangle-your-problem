@@ -1,7 +1,6 @@
 import { MenuItem, UsageStats } from "../types";
 
-const GLM_API_URL =
-        "https://open.bigmodel.cn/api/coding/paas/v4/chat/completions";
+const GLM_API_URL = "https://api.z.ai/api/coding/paas/v4/chat/completions";
 
 // Estimated pricing for GLM-4 (adjust as needed based on actuals)
 const INPUT_PRICE_PER_1M = 0.1; // Placeholder
@@ -54,10 +53,10 @@ export const generateMenuFromDump = async (
                 const controller = new AbortController();
                 const timeoutId = setTimeout(() => {
                         onLog(
-                                "[CRITICAL] Request timeout exceeded (45s). Aborting connection...",
+                                "[CRITICAL] Request timeout exceeded (120s). Aborting connection...",
                         );
                         controller.abort();
-                }, 45000);
+                }, 120000);
 
                 onLog("[NETWORK] Sending request to Zhipu AI Gateway...");
                 onLog("[NETWORK] Using model: glm-4.7");
@@ -194,7 +193,7 @@ export const generateMenuFromDump = async (
                                 "[CRITICAL] Request was aborted. This usually means:",
                         );
                         onLog(
-                                "  1. The API request took longer than 45 seconds (timeout)",
+                                "  1. The API request took longer than 120 seconds (timeout)",
                         );
                         onLog(
                                 "  2. The connection was interrupted by the user",
