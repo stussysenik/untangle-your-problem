@@ -7,6 +7,10 @@
     "dev": "vite",
     "build": "vite build",
     "preview": "vite preview",
+    "lint": "oxlint",
+    "lint:fix": "oxlint --fix",
+    "typecheck": "tsc --noEmit",
+    "check": "oxlint && tsc --noEmit",
     "worker": "node --import=tsx/esm temporal/worker.ts"
   },
   "dependencies": {
@@ -25,8 +29,11 @@
   },
   "devDependencies": {
     "@types/node": "^22.14.0",
+    "@types/react": "^19.2.17",
+    "@types/react-dom": "^19.2.3",
     "@vitejs/plugin-basic-ssl": "^2.1.0",
     "@vitejs/plugin-react": "^5.0.0",
+    "oxlint": "^1.71.0",
     "tsx": "^4.22.4",
     "typescript": "~5.8.2",
     "unocss": "^66.7.3",

@@ -1,7 +1,6 @@
 import path from 'path';
 import { defineConfig, loadEnv } from 'vite';
 import react from '@vitejs/plugin-react';
-import basicSsl from '@vitejs/plugin-basic-ssl';
 import UnoCSS from 'unocss/vite';
 import type { ViteDevServer } from 'vite';
 import type { IncomingMessage, ServerResponse } from 'http';
@@ -192,14 +191,13 @@ export default defineConfig(({ mode }) => {
 
   return {
     server: {
-      port: 3000,
       host: '0.0.0.0',
     },
     plugins: [
       UnoCSS(),
       react(),
       ...(mode === 'development'
-        ? [basicSsl(), temporalDevPlugin(temporalAddress, nimKey)]
+        ? [temporalDevPlugin(temporalAddress, nimKey)]
         : []),
     ],
     resolve: {

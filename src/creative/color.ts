@@ -15,13 +15,14 @@ function fibColor(seed: number): string {
   return `rgb(${r}, ${g}, ${b})`;
 }
 
+function parseRgb(s: string): [number, number, number] {
+  const m = s.match(/rgb\((\d+),\s*(\d+),\s*(\d+)\)/);
+  return m ? [+m[1], +m[2], +m[3]] : [0, 0, 0];
+}
+
 function contrast(a: string, b: string): number {
-  const parse = (s: string): [number, number, number] => {
-    const m = s.match(/rgb\((\d+),\s*(\d+),\s*(\d+)\)/);
-    return m ? [+m[1], +m[2], +m[3]] : [0, 0, 0];
-  };
-  const [r1, g1, b1] = parse(a);
-  const [r2, g2, b2] = parse(b);
+  const [r1, g1, b1] = parseRgb(a);
+  const [r2, g2, b2] = parseRgb(b);
   return Math.sqrt((r2 - r1) ** 2 + (g2 - g1) ** 2 + (b2 - b1) ** 2);
 }
 

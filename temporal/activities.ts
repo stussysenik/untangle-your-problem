@@ -89,10 +89,10 @@ export async function callNIM(text: string): Promise<Menu> {
 
     const rawParsed = JSON.parse(content) as Record<string, unknown>;
     if (Array.isArray(rawParsed.items)) {
-      rawParsed.items = (rawParsed.items as Record<string, unknown>[]).map((item, i) => ({
-        ...item,
-        id: `nim-${i}-${Date.now()}`,
-      }));
+      const now = Date.now();
+      (rawParsed.items as Record<string, unknown>[]).forEach((item, i) => {
+        item.id = `nim-${i}-${now}`;
+      });
     }
 
     const validated = MenuSchema.parse({

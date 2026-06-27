@@ -80,76 +80,152 @@ body {
         border-right: 1px solid rgba(0, 0, 0, 0.06);
 }
 
-/* 
-  PDF EXPORT - BOXXY COLUMN VIEW 
-  Forces a 2-column layout on print, ensuring the experience matches the "engineering grid" aesthetic.
+/*
+  FOLDING-PAPER DECK — one square "sheet" at a time, one action per sheet, every screen.
+  Containment contract (parent → child) so the square always governs:
+    .untangle-stage  centers the sheet, owns outer spacing
+    .paper           the square; single source of truth for size via --edge; clips its content
+    .paper__sheet    absolutely fills the square; flex column; scrolls only where a child opts in
+    .sheet-flow      vertical rhythm for a sheet's content
+  --edge = min(width, height, cap) so the square fits BOTH axes → minimal scrolling.
+  Inner type/space scale to the sheet via container query units (cqi).
+*/
+.untangle-stage {
+        box-sizing: border-box;
+        min-height: 100vh;
+        min-height: 100svh;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        gap: clamp(0.75rem, 2.5vh, 1.25rem);
+        padding: clamp(0.75rem, 4vw, 2rem);
+}
+
+.paper {
+        /* Definite viewport units on BOTH axes — a percentage height would collapse
+           against the stage's content-sized (indefinite) height. */
+        --edge: min(100vw - 3rem, 100svh - 8rem, 34rem);
+        position: relative;
+        inline-size: var(--edge);
+        block-size: var(--edge);
+        background: #fff;
+        border: 2px solid #000;
+        box-shadow: 8px 8px 0 0 #000;
+        container: paper / inline-size;
+        perspective: 1400px;
+}
+
+.paper__sheet {
+        position: absolute;
+        inset: 0;
+        display: flex;
+        flex-direction: column;
+        padding: clamp(1rem, 6cqi, 2rem);
+        overflow: hidden;
+        outline: none;
+}
+
+.paper__sheet--folding {
+        /* Hardware-first: only transform + opacity. A gentle, barely-overshooting spring
+           (easing via linear()) reads as physical without the abrupt rotateY flip. */
+        will-change: transform, opacity;
+        animation: paper-fold 0.5s linear(
+                0, 0.022, 0.082, 0.171, 0.286, 0.418, 0.557, 0.69,
+                0.806, 0.898, 0.962, 0.998, 1.008, 1.006, 1.001, 1
+        );
+}
+
+@keyframes paper-fold {
+        from { opacity: 0; transform: translate3d(0, 10px, 0); }
+        to { opacity: 1; transform: translate3d(0, 0, 0); }
+}
+
+.sheet-flow {
+        display: flex;
+        flex-direction: column;
+        gap: clamp(0.6rem, 3cqi, 1.1rem);
+        block-size: 100%;
+        min-block-size: 0;
+}
+
+/* Fold controls */
+.fold-nav {
+        display: flex;
+        align-items: center;
+        gap: 1rem;
+        font-family: 'Space Mono', monospace;
+        font-size: 11px;
+        letter-spacing: 0.18em;
+        text-transform: uppercase;
+}
+
+.fold-nav button {
+        inline-size: 2.5rem;
+        block-size: 2.5rem;
+        display: grid;
+        place-items: center;
+        background: #fff;
+        border: 2px solid #000;
+        cursor: pointer;
+        font-size: 1rem;
+        transition: background-color 0.12s ease, color 0.12s ease;
+}
+
+.fold-nav button:hover:not(:disabled) { background: #000; color: #fff; }
+.fold-nav button:disabled { opacity: 0.25; cursor: not-allowed; }
+
+.fold-nav__active { color: #000; }
+.fold-nav__dim { color: rgba(0, 0, 0, 0.3); }
+.fold-nav__sep { color: rgba(0, 0, 0, 0.3); }
+
+@media (prefers-reduced-motion: reduce) {
+        .paper__sheet--folding { animation: none; }
+}
+
+/*
+  PRINT — the active sheet (Itinerary / Source) flows naturally onto the page,
+  unclipped, without the square frame or fold chrome.
 */
 @media print {
-        @page {
-                margin: 0;
-                size: landscape;
-        }
+        @page { margin: 1.5cm; }
 
         body {
                 -webkit-print-color-adjust: exact !important;
                 print-color-adjust: exact !important;
                 background-image: none !important;
-                overflow: visible !important;
-                height: 100vh !important;
-                width: 100vw !important;
         }
 
-        .no-print {
-                display: none !important;
+        .no-print { display: none !important; }
+
+        .untangle-stage {
+                display: block !important;
+                min-height: 0 !important;
+                padding: 0 !important;
         }
 
-        /* Force the Root to be a flex row container */
-        #root {
-                display: flex !important;
-                flex-direction: row !important;
-                height: 100% !important;
-                width: 100% !important;
-                overflow: hidden !important;
+        .paper {
+                inline-size: 100% !important;
+                block-size: auto !important;
                 border: none !important;
+                box-shadow: none !important;
+                container-type: normal !important;
+                perspective: none !important;
         }
 
-        /* Left Panel - Menu */
-        .left-panel-container {
-                width: 50% !important;
-                height: 100% !important;
-                flex-shrink: 0 !important;
+        .paper__sheet {
+                position: static !important;
+                padding: 0 !important;
                 overflow: visible !important;
-                display: flex !important;
-                flex-direction: column !important;
-                border-right: 2px solid #000 !important;
-                padding: 1cm !important;
-                background: white !important;
-                max-height: none !important;
-                /* Ensure it doesn't clip internally if we can help it */
+                animation: none !important;
         }
 
-        /* Right Panel - Source Trace */
-        .right-panel-container {
-                display: flex !important;
-                width: 50% !important;
-                height: 100% !important;
-                flex-shrink: 0 !important;
-                overflow: visible !important;
-                padding: 1cm !important;
-                background: #f8f8f8 !important;
-                max-height: none !important;
-        }
+        .sheet-flow { block-size: auto !important; }
 
-        /* 
-     PRINT OPTIMIZATION CLASS
-     Force containers to show all content (no scrollbars) in print.
-  */
         .print-expand {
                 overflow: visible !important;
-                height: auto !important;
-                display: block !important;
-                /* Often needed to kill flex/scroll behavior */
                 max-height: none !important;
+                height: auto !important;
         }
 }
 

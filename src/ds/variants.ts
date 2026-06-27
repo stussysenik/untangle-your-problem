@@ -28,11 +28,13 @@ export const dishNameVariants = cva(
 );
 
 export const buttonVariants = cva(
-  'w-full py-6 lg:py-8 border-4 border-black transition-all duration-75 ease-out font-mono font-bold text-2xl lg:text-4xl uppercase group relative overflow-hidden active:scale-[0.99] flex items-center justify-center gap-4 lg:gap-6',
+  // Intrinsic-width, not full-bleed (no redundant left/right). No overflow-hidden so the
+  // hover arrow never clips at the edge.
+  'group inline-flex items-center justify-center gap-3 self-start px-6 py-3 sm:px-8 sm:py-4 border-4 border-black font-mono font-bold text-lg sm:text-xl uppercase tracking-tight leading-none [&>svg]:shrink-0 transition-[background-color,color,transform] duration-100 ease-out active:scale-[0.98]',
   {
     variants: {
       enabled: {
-        true: 'bg-white text-black hover:bg-black hover:text-white hover:border-black',
+        true: 'cursor-pointer bg-white text-black hover:bg-black hover:text-white',
         false: 'opacity-50 cursor-not-allowed bg-gray-50 text-gray-400 border-gray-200',
       },
     },
