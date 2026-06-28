@@ -11,7 +11,8 @@
     "lint:fix": "oxlint --fix",
     "typecheck": "tsc --noEmit",
     "check": "oxlint && tsc --noEmit",
-    "worker": "node --import=tsx/esm temporal/worker.ts"
+    "worker": "node --import=tsx/esm temporal/worker.ts",
+    "gen:test": "tsx src/ai/__tests__/run-generation.ts"
   },
   "dependencies": {
     "@temporalio/activity": "^1.18.1",

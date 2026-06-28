@@ -184,6 +184,58 @@ body {
 }
 
 /*
+  DUO — the success state: two side-by-side panes (Itinerary | Source trace).
+  Each pane reuses the paper idiom (border, shadow, own inline-size container so
+  cqi type scales per-pane). Definite height on desktop → each pane scrolls
+  internally. Below 1024px the panes stack and the page scrolls.
+*/
+.duo {
+        --pane-h: min(100svh - 7rem, 40rem);
+        inline-size: min(100vw - 3rem, 62rem);
+        block-size: var(--pane-h);
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: clamp(0.75rem, 2vw, 1.25rem);
+}
+
+.duo__pane {
+        position: relative;
+        min-block-size: 0;
+        display: flex;
+        background: #fff;
+        border: 2px solid #000;
+        box-shadow: 8px 8px 0 0 #000;
+        padding: clamp(1rem, 5cqi, 1.75rem);
+        overflow: hidden;
+        container: paper / inline-size;
+}
+
+.duo__pane > .sheet-flow { inline-size: 100%; }
+
+.duo__pane--enter {
+        will-change: transform, opacity;
+        animation: paper-fold 0.5s linear(
+                0, 0.022, 0.082, 0.171, 0.286, 0.418, 0.557, 0.69,
+                0.806, 0.898, 0.962, 0.998, 1.008, 1.006, 1.001, 1
+        ) both;
+}
+.duo__pane--enter:last-child { animation-delay: 0.08s; }
+
+@media (max-width: 1023px) {
+        .duo {
+                grid-template-columns: 1fr;
+                block-size: auto;
+                inline-size: min(100vw - 2rem, 34rem);
+                gap: clamp(0.75rem, 2.5vh, 1.25rem);
+        }
+        .duo__pane { min-block-size: min(70svh, 30rem); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+        .duo__pane--enter { animation: none; }
+}
+
+/*
   PRINT — the active sheet (Itinerary / Source) flows naturally onto the page,
   unclipped, without the square frame or fold chrome.
 */
@@ -204,14 +256,25 @@ body {
                 padding: 0 !important;
         }
 
-        .paper {
+        .paper,
+        .duo,
+        .duo__pane {
                 inline-size: 100% !important;
                 block-size: auto !important;
                 border: none !important;
                 box-shadow: none !important;
                 container-type: normal !important;
                 perspective: none !important;
+                padding: 0 !important;
+                overflow: visible !important;
         }
+
+        .duo {
+                display: block !important;
+        }
+
+        .duo__pane { margin-block-end: 1.5rem; }
+        .duo__pane--enter { animation: none !important; }
 
         .paper__sheet {
                 position: static !important;
