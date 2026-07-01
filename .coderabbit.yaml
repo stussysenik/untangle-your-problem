@@ -1,0 +1,28 @@
+# CodeRabbit configuration — https://docs.coderabbit.ai/guides/configure-coderabbit
+# Requires the CodeRabbit GitHub App to be installed on the repository.
+language: en-US
+early_access: false
+reviews:
+  profile: chill
+  request_changes_workflow: false
+  high_level_summary: true
+  poem: false
+  review_status: true
+  auto_review:
+    enabled: true
+    drafts: false
+    base_branches:
+      - main
+  # CodeRabbit auto-detects .oxlintrc.json and runs oxlint as part of review.
+  path_instructions:
+    - path: "**/*.{ts,tsx}"
+      instructions: >-
+        Enforce strict TypeScript and an essentialist style: minimal, readable
+        diffs; no implicit any; immutable data; UI dumb / logic isolated and
+        testable. Flag drive-by refactors and unnecessary abstraction.
+    - path: "src/ai/**"
+      instructions: >-
+        This is the generation core. Keep it pure and decoupled from Temporal
+        runtime concerns. Validate all model output against the Zod schema.
+chat:
+  auto_reply: true

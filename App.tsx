@@ -47,6 +47,17 @@ const generateSessionId = () => {
 const isMac = typeof navigator !== 'undefined' && /Mac|iPhone|iPad/.test(navigator.platform);
 const SUBMIT_HINT = `${isMac ? '⌘' : 'Ctrl'} + Enter`;
 
+// Locate a source trigger in the original text. Falls back to a whitespace-tolerant
+// match when the model normalized whitespace (e.g. collapsed a newline to a space),
+// so the highlight survives — surfaced by the generation harness.
+const findTrigger = (haystack: string, needle: string): [number, number] | null => {
+  const exact = haystack.indexOf(needle);
+  if (exact !== -1) return [exact, exact + needle.length];
+  const pattern = needle.replace(/[.*+?^${}()|[\]\\]/g, '\\$&').replace(/\s+/g, '\\s+');
+  const m = new RegExp(pattern).exec(haystack);
+  return m ? [m.index, m.index + m[0].length] : null;
+};
+
 const downloadFile = (content: string, filename: string, mime: string) => {
   const a = Object.assign(document.createElement('a'), {
     href: URL.createObjectURL(new Blob([content], { type: mime })),
@@ -144,8 +155,8 @@ export default function App() {
     if (!inputText || !menu?.items.length) return [{ text: inputText, type: 'normal' }];
     const matches: { start: number; end: number; itemIndex: number; itemId: string }[] = [];
     menu.items.forEach((item, idx) => {
-      const start = inputText.indexOf(item.sourceTrigger);
-      if (start !== -1) matches.push({ start, end: start + item.sourceTrigger.length, itemIndex: idx + 1, itemId: (item as Record<string, string>).id ?? String(idx) });
+      const found = findTrigger(inputText, item.sourceTrigger);
+      if (found) matches.push({ start: found[0], end: found[1], itemIndex: idx + 1, itemId: (item as Record<string, string>).id ?? String(idx) });
     });
     matches.sort((a, b) => a.start - b.start);
     const unique: typeof matches = [];
@@ -193,13 +204,13 @@ export default function App() {
       </header>
       <p className="font-typewriter text-[clamp(0.8rem,3.6cqi,1rem)] leading-relaxed">
         <span className="bg-insight box-decoration-clone px-1 text-black">
-          Deconstruct a messy brain dump into an actionable itinerary via a Temporal workflow.
+          This tool deconstructs complex “brain dumps” — the kind that lead to decision paralysis — into an actionable itinerary.
         </span>
       </p>
       <ol className="font-typewriter text-[clamp(0.75rem,3.2cqi,0.95rem)] list-decimal list-inside space-y-1.5 text-black/80">
-        <li>Write your stream of consciousness.</li>
-        <li>Don't worry about structure or grammar.</li>
-        <li>We untangle it into a checklist. 🐙</li>
+        <li>Type your stream of consciousness.</li>
+        <li>Don't worry about structure, grammar, or content.</li>
+        <li>Write it out first — we'll help you untangle it. 🐙</li>
       </ol>
       <div className="mt-auto pt-4">
         <button onClick={() => setFold(1)} className={buttonVariants({ enabled: true })}>
@@ -373,6 +384,31 @@ export default function App() {
     brief: renderBrief, compose: renderCompose, working: renderWorking,
     itinerary: renderItinerary, source: renderSource, error: renderError,
   };
+
+  // Success is a true two-pane spread: itinerary (left) + source trace (right),
+  // side by side on desktop, stacked on narrow screens. One-pane → one-pane → two-pane.
+  if (machineState === 'success' && menu) {
+    return (
+      <div className="untangle-stage font-sans bg-white text-black selection:bg-insight selection:text-black">
+        <section className="duo" aria-label="Your untangled result — itinerary and source trace">
+          <div
+            ref={sheetRef}
+            tabIndex={-1}
+            aria-label="Itinerary"
+            className={`duo__pane ${reducedMotion ? '' : 'duo__pane--enter'}`}
+          >
+            {renderItinerary()}
+          </div>
+          <div
+            aria-label="Source trace"
+            className={`duo__pane ${reducedMotion ? '' : 'duo__pane--enter'}`}
+          >
+            {renderSource()}
+          </div>
+        </section>
+      </div>
+    );
+  }
 
   return (
     <div className="untangle-stage font-sans bg-white text-black selection:bg-insight selection:text-black">
